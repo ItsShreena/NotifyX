@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <rect width="24" height="24" rx="5" fill="#0A0A0A"/>
+  <!-- Left Pillar -->
+  <rect x="3.5" y="4" width="4" height="16.5" rx="1" fill="#B8FF00"/>
+  <!-- Dynamic Diagonal Blade -->
+  <path d="M8.2 4.6L16.2 17V20.5H15.2L7.2 8.1V4.6H8.2Z" fill="#B8FF00"/>
+  <!-- Right Pillar -->
+  <rect x="15" y="8.2" width="4" height="12.3" rx="1" fill="#B8FF00"/>
+  <!-- Notification Signal Transmission Rays -->
+  <path d="M16.5 5.6A2.8 2.8 0 0 1 19.1 8.2" stroke="#B8FF00" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M16.5 3.3A5.1 5.1 0 0 1 21.4 8.2" stroke="#B8FF00" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M16.5 1A7.4 7.4 0 0 1 23.7 8.2" stroke="#B8FF00" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

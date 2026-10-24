@@ -1,0 +1,15 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Local data and secrets
+dump.rdb
+*.rdb
+.env
+.env.*
+!.env.example

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-electric-lime: #B8FF00;
+  --color-lime-accent: #B8FF00;
+  --color-lime-hover: #a3e600;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --accent-lime: #B8FF00;
+    --accent-lime-hover: #a3e600;
+    --accent-lime-glow: rgba(184, 255, 0, 0.22);
+    --accent-lime-dim: rgba(184, 255, 0, 0.12);
+    --accent-lime-subtle: rgba(184, 255, 0, 0.05);
+    --accent-lime-border: rgba(184, 255, 0, 0.35);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #0a0a0a;
+    color: #f5f5f5;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262626;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #404040;
+  }
+
+  ::selection {
+    background-color: rgba(184, 255, 0, 0.22);
+    color: #ffffff;
+  }
+}
+

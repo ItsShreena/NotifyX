@@ -1,0 +1,7 @@
+{
+  "name": "NotifyX",
+  "description": "Reliable notifications for modern applications. Developer-focused notification infrastructure platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

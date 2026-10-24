@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Developer user who signs into NotifyX to manage notification infrastructure
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  applications Application[]
+  preferences  NotificationPreference[]
+
+  @@index([email])
+  @@map("users")
+}
+
+/// Connected external application (E-commerce, SaaS, Banking, College portal, etc.)
+model Application {
+  id                  String                   @id @default(cuid())
+  userId              String
+  name                String
+  description         String?
+  apiKeyHash          String                   @unique
+  apiKeyPreview       String
+  apiKeyStatus        String                   @default("active") // active, revoked
+  lastActivityAt      DateTime?
+  environment         String                   @default("production") // production, staging, development
+  rateLimitPerSec     Int                      @default(100)
+  webhookUrl          String?
+  status              String                   @default("active") // active, paused, archived
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications       Notification[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([apiKeyHash])
+  @@index([status])
+  @@map("applications")
+}
+
+/// Dispatched notification event triggered by an application
+model Notification {
+  id              String                 @id @default(cuid())
+  applicationId   String
+  recipientId     String                 // Target recipient identifier (e.g. usr_123, email, phone)
+  idempotencyKey  String?                // Idempotency token to prevent duplicate sends
+  type            String                 // transactional, alert, system, marketing
+  title           String
+  message         String
+  priority        String                 @default("normal") // urgent, high, normal, low
+  status          String                 @default("pending") // pending, delivered, failed, read, retrying, skipped
+  attemptCount    Int                    @default(0)
+  lastError       String?
+  retryHistory    Json?                  // Detailed timeline of retry attempts
+  readAt          DateTime?
+  actionUrl       String?
+  metadata        Json?
+  aiProcessed     Boolean                @default(false)
+  aiCategory      String?
+  aiPriority      String?
+  aiSummary       String?
+  aiShouldGroup   Boolean                @default(false)
+  aiProcessedAt   DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  application     Application            @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  deliveries      NotificationDelivery[]
+
+  @@unique([applicationId, idempotencyKey])
+  @@index([applicationId])
+  @@index([recipientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([applicationId, createdAt])
+  @@index([recipientId, status])
+  @@index([aiProcessed])
+  @@map("notifications")
+}
+
+/// Multi-channel transport attempt tracking for a specific notification
+model NotificationDelivery {
+  id             String       @id @default(cuid())
+  notificationId String
+  channel        String       // in_app, email, sms, webhook, push
+  status         String       @default("pending") // pending, delivered, failed, retrying, skipped
+  statusCode     Int?         // Downstream HTTP/Provider code (e.g. 200, 429, 500)
+  attempts       Int          @default(1)
+  maxAttempts    Int          @default(3)
+  latencyMs      Int?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  errorMessage   String?
+  requestPayload Json?
+  responseBody   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([channel])
+  @@index([status])
+  @@index([createdAt])
+  @@index([deliveredAt])
+  @@index([failedAt])
+  @@index([channel, status])
+  @@map("notification_deliveries")
+}
+
+/// User notification preferences and channel controls per category
+model NotificationPreference {
+  id           String   @id @default(cuid())
+  userId       String
+  category     String   // security, payments, orders, comments, tasks, deployments, reminders, system, marketing, channels
+  inAppEnabled Boolean  @default(true)
+  emailEnabled Boolean  @default(true)
+  pushEnabled  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category])
+  @@index([userId])
+  @@index([category])
+  @@map("notification_preferences")
+}
+
+/// Security Audit Log recording security-sensitive events
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  applicationId String?
+  eventType     String   // login_success, login_failure, signup, api_key_created, api_key_revoked, api_key_regenerated, application_created, application_deleted, rate_limit_exceeded, unauthorized_request, permission_failure
+  ipAddress     String?
+  userAgent     String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([applicationId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
