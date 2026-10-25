@@ -1,3 +1,5 @@
+import { ResendEmailProvider } from './resendProvider.ts';
+
 export interface EmailSendOptions {
   to: string;
   subject: string;
@@ -37,6 +39,14 @@ export class MockEmailProvider implements EmailProvider {
   private sentMails: EmailSendOptions[] = [];
   private shouldFailNext = false;
   private failErrorMessage = 'SMTP 500 Connection Refused';
+
+  /**
+   * Test-only injection hook for failure scenarios. This does not represent a real provider outage.
+   */
+  simulateFailure(failMessage = 'SMTP 500 Connection Refused'): void {
+    this.shouldFailNext = true;
+    this.failErrorMessage = failMessage;
+  }
 
   async sendEmail(options: EmailSendOptions): Promise<EmailSendResult> {
     const start = Date.now();
@@ -87,13 +97,49 @@ export class MockEmailProvider implements EmailProvider {
     this.sentMails = [];
   }
 
-  simulateFailure(failMessage = 'SMTP 500 Connection Refused'): void {
-    this.shouldFailNext = true;
-    this.failErrorMessage = failMessage;
-  }
 }
 
-let activeEmailProvider: EmailProvider = new MockEmailProvider();
+export function getResendSenderEmail(): string | undefined {
+  return (
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    process.env.RESEND_EMAIL_FROM?.trim() ||
+    process.env.EMAIL_FROM?.trim() ||
+    process.env.RESEND_FROM?.trim() ||
+    undefined
+  );
+}
+
+export function resolveEmailProvider(): EmailProvider {
+  const configured = (process.env.EMAIL_PROVIDER || 'mock').trim().toLowerCase();
+
+  if (configured === 'mock') {
+    return new MockEmailProvider();
+  }
+
+  if (configured === 'resend') {
+    const apiKey = process.env.RESEND_API_KEY?.trim();
+    const from = getResendSenderEmail();
+
+    if (!apiKey) {
+      throw new Error('EMAIL_PROVIDER=resend requires RESEND_API_KEY to be configured.');
+    }
+    if (!from) {
+      throw new Error('EMAIL_PROVIDER=resend requires RESEND_FROM_EMAIL (or RESEND_EMAIL_FROM / EMAIL_FROM) to be configured.');
+    }
+
+    return new ResendEmailProvider({
+      apiKey,
+      from,
+      fromName: process.env.RESEND_FROM_NAME?.trim() || undefined,
+    });
+  }
+
+  throw new Error(
+    `Unsupported EMAIL_PROVIDER="${configured}". Supported values are "mock" and "resend".`
+  );
+}
+
+let activeEmailProvider: EmailProvider = resolveEmailProvider();
 
 export function getEmailProvider(): EmailProvider {
   return activeEmailProvider;

@@ -1,3 +1,5 @@
+import { getResendSenderEmail } from '../channels/providers/emailProvider.ts';
+
 /**
  * Production Environment Configuration & Audit Validator.
  * Safely audits configuration at server boot, providing actionable warnings
@@ -11,6 +13,9 @@ export interface EnvValidationReport {
   jwtConfigured: boolean;
   aiConfigured: boolean;
   frontendUrlConfigured: boolean;
+  emailProvider: string;
+  resendConfigured: boolean;
+  resendSenderConfigured: boolean;
   warnings: string[];
   recommendations: string[];
 }
@@ -19,6 +24,9 @@ export function validateEnvironment(): EnvValidationReport {
   const isProduction = process.env.NODE_ENV === 'production';
   const warnings: string[] = [];
   const recommendations: string[] = [];
+  const emailProvider = (process.env.EMAIL_PROVIDER || 'mock').trim().toLowerCase();
+  const resendConfigured = emailProvider === 'resend' ? Boolean(process.env.RESEND_API_KEY?.trim()) : false;
+  const resendSenderConfigured = Boolean(getResendSenderEmail());
 
   // 1. JWT_SECRET
   const jwtSecret = process.env.JWT_SECRET;
@@ -80,6 +88,24 @@ export function validateEnvironment(): EnvValidationReport {
     );
   }
 
+  // 6. EMAIL_PROVIDER / Resend
+  if (emailProvider === 'resend') {
+    if (!resendConfigured) {
+      warnings.push(
+        'EMAIL_PROVIDER=resend requires RESEND_API_KEY to be set before starting the worker.'
+      );
+    }
+    if (!resendSenderConfigured) {
+      warnings.push(
+        'EMAIL_PROVIDER=resend requires RESEND_FROM_EMAIL (or RESEND_EMAIL_FROM / EMAIL_FROM) and optionally RESEND_FROM_NAME to be configured.'
+      );
+    }
+  } else if (emailProvider !== 'mock') {
+    warnings.push(
+      `Unsupported EMAIL_PROVIDER="${emailProvider}". Supported values are "mock" and "resend".`
+    );
+  }
+
   const report: EnvValidationReport = {
     isProduction,
     databaseConfigured,
@@ -87,6 +113,9 @@ export function validateEnvironment(): EnvValidationReport {
     jwtConfigured,
     aiConfigured,
     frontendUrlConfigured,
+    emailProvider,
+    resendConfigured,
+    resendSenderConfigured,
     warnings,
     recommendations,
   };
@@ -97,6 +126,7 @@ export function validateEnvironment(): EnvValidationReport {
   console.log(`   Database:    ${databaseConfigured ? 'PostgreSQL Configured' : 'In-Memory Fallback'}`);
   console.log(`   Queue:       ${redisConfigured ? 'BullMQ (Redis)' : 'EmbeddedQueue (In-Memory)'}`);
   console.log(`   Auth/JWT:    ${jwtConfigured ? 'Custom Secret Configured' : (isProduction ? '⚠️ Dev Secret Used!' : 'Development Default')}`);
+  console.log(`   Email:       ${emailProvider === 'resend' ? 'Resend API Configured' : 'Mock Email Provider Active'}`);
   console.log(`   AI Intel:    ${aiConfigured ? 'Gemini API Active' : 'Deterministic Heuristic Fallback'}`);
   console.log(`   CORS:        ${frontendUrlConfigured ? `Allowed Origin: ${frontendUrl}` : 'Same-Origin / Localhost Permissive'}`);
 
@@ -114,6 +144,9 @@ export function validateEnvironment(): EnvValidationReport {
     }
     if (isProduction && !databaseConfigured) {
       criticalErrors.push('DATABASE_URL must be configured with a valid postgresql:// connection string.');
+    }
+    if (emailProvider === 'resend' && (!resendConfigured || !resendSenderConfigured)) {
+      criticalErrors.push('EMAIL_PROVIDER=resend requires RESEND_API_KEY and RESEND_FROM_EMAIL (or RESEND_EMAIL_FROM / EMAIL_FROM) to be set.');
     }
     if (criticalErrors.length > 0) {
       console.error('❌ [FATAL CONFIGURATION ERROR] Production startup aborted due to invalid secrets:');

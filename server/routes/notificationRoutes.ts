@@ -6,11 +6,81 @@ import { dbService } from '../services/dbService.ts';
 import { addNotificationJob } from '../queue/notificationQueue.ts';
 import { idempotencyService } from '../services/idempotencyService.ts';
 import { aiService } from '../services/aiService.ts';
+import { getEmailProvider } from '../channels/providers/emailProvider.ts';
 import { consoleNotificationRateLimiter, aiReanalyzeRateLimiter } from '../security/rateLimiter.ts';
 
 export const notificationRouter = Router();
 
 notificationRouter.use(requireAuth);
+
+/**
+ * Temporary admin-only diagnostics endpoint for production debugging.
+ * Requires EMAIL_DIAGNOSTIC_ENABLED=true and an email listed in ADMIN_EMAILS.
+ */
+notificationRouter.post('/diagnostic/test-email', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (process.env.EMAIL_DIAGNOSTIC_ENABLED !== 'true') {
+      res.status(404).json({
+        success: false,
+        error: 'Diagnostic endpoint is disabled.',
+      });
+      return;
+    }
+
+    const allowedAdmins = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    const callerEmail = req.developer?.email?.trim().toLowerCase();
+
+    if (!callerEmail || !allowedAdmins.includes(callerEmail)) {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: only configured admins can trigger a diagnostic email.',
+      });
+      return;
+    }
+
+    const provider = getEmailProvider();
+    const result = await provider.sendEmail({
+      to: 'delivered@resend.dev',
+      subject: 'NotifyX Diagnostic Email',
+      body: `This is a diagnostic email sent from NotifyX using the active ${provider.name} adapter. Triggered by ${callerEmail} at ${new Date().toISOString()}.`,
+      notificationId: `diag_${Date.now()}`,
+      metadata: {
+        source: 'diagnostic',
+        adminEmail: callerEmail,
+      },
+    });
+
+    if (!result.delivered) {
+      res.status(502).json({
+        success: false,
+        provider: result.provider,
+        statusCode: result.statusCode,
+        error: result.error || 'Diagnostic email send failed.',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      provider: result.provider,
+      messageId: result.messageId,
+      statusCode: result.statusCode,
+      delivered: true,
+      recipient: 'delivered@resend.dev',
+      message: 'Diagnostic email sent successfully using the active provider adapter.',
+    });
+  } catch (err: any) {
+    console.error('Failed to send diagnostic email:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send diagnostic email.',
+    });
+  }
+});
 
 /**
  * GET /api/notifications
