@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Send, CheckCircle2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -6,6 +6,16 @@ import { Application, DeliveryChannel } from '../../types/application';
 import { NotificationPriority, NotificationType } from '../../types/notification';
 import { notificationService } from '../../services/notificationService';
 import { logService } from '../../services/logService';
+
+export function getValidSelectedAppId(applications: Application[], currentValue?: string): string {
+  if (!applications.length) return '';
+
+  if (currentValue && applications.some((app) => app.id === currentValue)) {
+    return currentValue;
+  }
+
+  return applications[0].id;
+}
 
 export interface SendTestNotificationModalProps {
   isOpen: boolean;
@@ -20,8 +30,8 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
   applications,
   onNotificationSent,
 }) => {
-  const [selectedAppId, setSelectedAppId] = useState<string>(
-    applications[0]?.id || 'app_apex_ecom'
+  const [selectedAppId, setSelectedAppId] = useState<string>(() =>
+    getValidSelectedAppId(applications, '')
   );
   const [recipientId, setRecipientId] = useState<string>('usr_alex_842');
   const [channel, setChannel] = useState<DeliveryChannel>('in_app');
@@ -34,9 +44,16 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
 
+  useEffect(() => {
+    setSelectedAppId((currentValue) => getValidSelectedAppId(applications, currentValue));
+  }, [applications]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !message.trim()) return;
+    if (!selectedAppId || !applications.some((app) => app.id === selectedAppId)) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -65,8 +82,8 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
         applicationName: appName,
         recipient: recipientId,
         channel,
-        status: 'delivered',
-        statusCode: 200,
+        status: 'pending',
+        statusCode: 202,
         attempts: 1,
         maxAttempts: 3,
         latencyMs: Math.floor(Math.random() * 80) + 25,
@@ -81,7 +98,7 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
           'content-type': 'application/json',
           'x-notifyx-source': 'developer-console-tester',
         },
-        responseBody: '{"delivered":true,"dispatchedVia":"NotifyX-Pipeline"}',
+        responseBody: '{"status":"pending","dispatchedVia":"NotifyX-Pipeline"}',
       });
 
       setSuccess(true);
@@ -126,14 +143,22 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
               <select
                 value={selectedAppId}
                 onChange={(e) => setSelectedAppId(e.target.value)}
-                className="w-full text-xs bg-neutral-950 border border-neutral-800 rounded-md px-3 py-2 text-neutral-200 focus:outline-none focus:border-neutral-600"
+                disabled={applications.length === 0}
+                className="w-full text-xs bg-neutral-950 border border-neutral-800 rounded-md px-3 py-2 text-neutral-200 focus:outline-none focus:border-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {applications.map((app) => (
-                  <option key={app.id} value={app.id}>
-                    {app.name} ({app.environment})
-                  </option>
-                ))}
+                {applications.length === 0 ? (
+                  <option value="">No applications available</option>
+                ) : (
+                  applications.map((app) => (
+                    <option key={app.id} value={app.id}>
+                      {app.name} ({app.environment})
+                    </option>
+                  ))
+                )}
               </select>
+              {applications.length === 0 && (
+                <p className="mt-1 text-[10px] text-neutral-500">Create an application before sending a test notification.</p>
+              )}
             </div>
 
             <div>
@@ -229,7 +254,7 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
               type="submit"
               variant="primary"
               size="sm"
-              disabled={isSubmitting}
+              disabled={isSubmitting || applications.length === 0 || !selectedAppId}
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isSubmitting ? 'Routing Event...' : 'Send Event'}</span>
