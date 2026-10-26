@@ -484,6 +484,7 @@ async function runMultiChannelTests() {
     } catch (err: any) {
       threwError = true;
       assert(err.message.includes('Delivery failed for channel(s): [email]'), 'Error describes failed channel');
+      assert(err.message.includes('SMTP 503 Service Unavailable'), 'Error preserves the provider failure reason');
     }
 
     assert(threwError === true, 'Worker threw error to trigger exponential backoff retry');

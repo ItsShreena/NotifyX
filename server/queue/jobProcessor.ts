@@ -148,10 +148,26 @@ export async function processNotificationJob(
     maxAttempts,
   });
 
-  // If any enabled channel failed, throw error to trigger BullMQ retry (retrying only failed channels)
+  // If any enabled channel failed, throw the real transport error so retried jobs remain diagnosable.
   if (deliverySummary.hasFailures) {
     const failedList = deliverySummary.failedChannels.join(', ');
-    throw new Error(`Delivery failed for channel(s): [${failedList}] on attempt ${attemptNumber}`);
+    const failedDetails = deliverySummary.results
+      .filter((result) => !result.delivered && !result.skipped)
+      .map((result) => {
+        const detailParts = [`${result.channel} provider=${result.provider ?? 'unknown'}`];
+        if (result.error) {
+          detailParts.push(`error=${result.error}`);
+        } else if (result.reason) {
+          detailParts.push(`reason=${result.reason}`);
+        } else if (result.statusCode) {
+          detailParts.push(`statusCode=${result.statusCode}`);
+        }
+        return detailParts.join(' ');
+      })
+      .join('; ');
+
+    const suffix = failedDetails ? ` — ${failedDetails}` : '';
+    throw new Error(`Delivery failed for channel(s): [${failedList}]${suffix} on attempt ${attemptNumber}`);
   }
 
   const wasCompletelySkipped =
