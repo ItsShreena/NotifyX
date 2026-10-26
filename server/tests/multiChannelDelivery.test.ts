@@ -7,6 +7,7 @@ import { selectCandidateChannels } from '../channels/channelPolicy.ts';
 import {
   MockEmailProvider,
   getEmailProvider,
+  resolveEmailProvider,
   setEmailProvider,
   EmailProvider,
   EmailSendOptions,
@@ -59,6 +60,30 @@ async function runMultiChannelTests() {
 
     const push = channelFactory.getChannel('push');
     assert(typeof push.send === 'function', 'PushChannel implements send() contract');
+  });
+
+  // TEST 1B: Email provider selection remains mock-backed until a real adapter is implemented
+  await test('1b. EMAIL_PROVIDER=mock resolves to the mock provider and never claims a real SMTP send', async () => {
+    const previous = process.env.EMAIL_PROVIDER;
+    try {
+      process.env.EMAIL_PROVIDER = 'mock';
+      const resolved = resolveEmailProvider();
+      assert.strictEqual(resolved.name, 'MockEmailProvider', 'EMAIL_PROVIDER=mock selects the mock adapter');
+      const result = await resolved.sendEmail({
+        to: 'ops@notifyx.dev',
+        subject: 'Simulation check',
+        body: 'This is a simulated delivery only.',
+        notificationId: 'sim_check_001',
+      });
+      assert.strictEqual(result.delivered, true, 'Mock provider reports successful simulated delivery');
+      assert(result.messageId.startsWith('mock_email_'), 'Mock message IDs are explicitly simulated');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.EMAIL_PROVIDER;
+      } else {
+        process.env.EMAIL_PROVIDER = previous;
+      }
+    }
   });
 
   // TEST 2: In-App Channel Delivery

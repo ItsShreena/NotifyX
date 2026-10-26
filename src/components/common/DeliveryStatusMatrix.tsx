@@ -55,16 +55,16 @@ export const DeliveryStatusMatrix: React.FC<DeliveryStatusMatrixProps> = ({
 
   const formatProviderName = (raw?: string | null, channel?: string): string => {
     if (!raw) {
-      if (channel === 'email') return 'Email Gateway (Sandbox)';
-      if (channel === 'push') return 'Push Gateway (Sandbox)';
+      if (channel === 'email') return 'Mock Email Gateway (Simulated)';
+      if (channel === 'push') return 'Mock Push Gateway (Simulated)';
       if (channel === 'in_app') return 'In-App Live Stream';
       return 'NotifyX Pipeline';
     }
     if (raw === 'MockEmailProvider' || raw.toLowerCase().includes('mockemail')) {
-      return 'Email Gateway (Sandbox)';
+      return 'Mock Email Gateway (Simulated)';
     }
     if (raw === 'MockPushProvider' || raw.toLowerCase().includes('mockpush')) {
-      return 'Push Gateway (Sandbox)';
+      return 'Mock Push Gateway (Simulated)';
     }
     if (raw === 'InAppWebSocket' || raw.toLowerCase().includes('websocket')) {
       return 'In-App Live Stream';
