@@ -7,6 +7,7 @@ import { JWT_SECRET } from '../middleware/authMiddleware.ts';
 import { retryAllFailedJobs, addNotificationJob } from '../queue/notificationQueue.ts';
 import { authenticateSocket } from '../realtime/websocketServer.ts';
 import { userStore } from '../db/userStore.ts';
+import { CreateNotificationSchema } from '../security/validation.ts';
 
 async function runSecurityTests() {
   console.log('\n======================================================');
@@ -40,6 +41,33 @@ async function runSecurityTests() {
   });
   const userA = accountA.id;
   const userB = accountB.id;
+
+  await test('0. Supported channels are accepted while SMS and webhook are rejected', async () => {
+    const supported = ['in_app', 'email', 'push', 'multi_channel'];
+    for (const channel of supported) {
+      const result = CreateNotificationSchema.safeParse({
+        recipientId: 'user_123',
+        type: 'PAYMENT',
+        title: 'Supported channel check',
+        message: 'This should validate.',
+        priority: 'high',
+        channel,
+      });
+      assert.strictEqual(result.success, true, `Channel "${channel}" should be accepted`);
+    }
+
+    for (const channel of ['sms', 'webhook']) {
+      const result = CreateNotificationSchema.safeParse({
+        recipientId: 'user_123',
+        type: 'PAYMENT',
+        title: 'Unsupported channel check',
+        message: 'This should fail.',
+        priority: 'high',
+        channel,
+      });
+      assert.strictEqual(result.success, false, `Channel "${channel}" should be rejected`);
+    }
+  });
 
   // Create App A for User A
   const { application: appA, rawApiKey: rawKeyA } = await dbService.createApplication({

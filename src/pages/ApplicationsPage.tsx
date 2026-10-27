@@ -116,7 +116,7 @@ export const ApplicationsPage: React.FC = () => {
         environment: newEnv,
         rateLimitPerSec: Number(newRateLimit),
         webhookUrl: newWebhook,
-        enabledChannels: ['in_app', 'email', 'webhook'],
+        enabledChannels: ['in_app', 'email', 'push'],
       });
 
       setIsCreateOpen(false);

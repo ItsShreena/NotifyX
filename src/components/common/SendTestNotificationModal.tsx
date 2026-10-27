@@ -188,8 +188,6 @@ export const SendTestNotificationModal: React.FC<SendTestNotificationModalProps>
                 <option value="email">Email</option>
                 <option value="push">Push</option>
                 <option value="multi_channel">Multi-Channel (Priority Policy)</option>
-                <option value="sms">SMS</option>
-                <option value="webhook">Webhook</option>
               </select>
             </div>
 

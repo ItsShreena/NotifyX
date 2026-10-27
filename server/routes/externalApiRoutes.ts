@@ -54,10 +54,28 @@ externalApiRouter.get('/verify-key', (req: ExternalApplicationRequest, res: Resp
  * Main NotifyX Dispatch Endpoint.
  * External applications authenticated with their NotifyX API key call this endpoint.
  */
+const SUPPORTED_CHANNELS = ['in_app', 'email', 'push', 'multi_channel'] as const;
+
+const normalizeChannel = (channel: unknown): string | undefined => {
+  if (typeof channel !== 'string') return undefined;
+  const normalized = channel.trim().toLowerCase();
+  return SUPPORTED_CHANNELS.includes(normalized as (typeof SUPPORTED_CHANNELS)[number]) ? normalized : undefined;
+};
+
 const createNotificationHandler = async (req: ExternalApplicationRequest, res: Response): Promise<void> => {
   try {
     const app = req.application!;
     const { recipientId, type, title, message, priority, channel, actionUrl, metadata } = req.body;
+    const normalizedChannel = normalizeChannel(channel);
+
+    if (channel !== undefined && !normalizedChannel) {
+      res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'Unsupported channel value. Supported channels are: in_app, email, push, multi_channel.',
+        fields: { channel: 'Unsupported delivery channel.' },
+      });
+      return;
+    }
 
     // Field-level validation
     const validationErrors: Record<string, string> = {};
@@ -148,7 +166,7 @@ const createNotificationHandler = async (req: ExternalApplicationRequest, res: R
       title: title.trim(),
       message: message.trim(),
       priority: finalPriority,
-      channel: channel || 'in_app',
+      channel: normalizedChannel || 'in_app',
       actionUrl: actionUrl?.trim() || undefined,
       metadata: metadata && typeof metadata === 'object' ? metadata : undefined,
       initialStatus: 'pending',
@@ -164,7 +182,7 @@ const createNotificationHandler = async (req: ExternalApplicationRequest, res: R
     await addNotificationJob({
       notificationId: created.id,
       recipientId: created.recipientId,
-      channel: channel || 'in_app',
+      channel: normalizedChannel || 'in_app',
     });
 
     // Fast asynchronous response: does not wait for slow downstream delivery!

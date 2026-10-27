@@ -4,6 +4,9 @@ import type { Request, Response, NextFunction } from 'express';
 // Supported priorities
 export const PrioritySchema = z.enum(['low', 'normal', 'high', 'critical']);
 
+// Supported delivery channels for the implemented runtime.
+export const SUPPORTED_NOTIFICATION_CHANNELS = ['in_app', 'email', 'push', 'multi_channel'] as const;
+
 // Notification Dispatch Schema
 export const CreateNotificationSchema = z.object({
   recipientId: z
@@ -28,7 +31,7 @@ export const CreateNotificationSchema = z.object({
     .max(5000, 'Notification message: maximum 5000 characters'),
   priority: PrioritySchema.optional().default('normal'),
   channel: z
-    .enum(['in_app', 'email', 'push', 'sms', 'webhook', 'multi', 'all', 'multi_channel'])
+    .enum([...SUPPORTED_NOTIFICATION_CHANNELS])
     .optional()
     .default('in_app'),
   actionUrl: z

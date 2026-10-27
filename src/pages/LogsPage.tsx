@@ -146,8 +146,6 @@ export const LogsPage: React.FC = () => {
             <option value="all">All Channels</option>
             <option value="in_app">In-App</option>
             <option value="email">Email</option>
-            <option value="webhook">Webhook</option>
-            <option value="sms">SMS</option>
             <option value="push">Push</option>
           </select>
         </div>

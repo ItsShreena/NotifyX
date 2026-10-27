@@ -9,9 +9,7 @@ import {
   ShieldCheck,
   Send,
   Sparkles,
-  Smartphone,
   Mail,
-  Webhook,
   MessageSquare,
   Server,
   Zap,
@@ -36,7 +34,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [copiedSnippet, setCopiedSnippet] = useState(false);
 
   // Interactive sandbox state
-  const [sandboxChannel, setSandboxChannel] = useState<'in_app' | 'email' | 'webhook' | 'sms'>('in_app');
+  const [sandboxChannel, setSandboxChannel] = useState<'in_app' | 'email' | 'push'>('in_app');
   const [sandboxPreset, setSandboxPreset] = useState<'ecom' | 'devops' | 'banking' | 'college'>('ecom');
   const [sandboxDelivered, setSandboxDelivered] = useState(true);
 
@@ -318,7 +316,7 @@ response = client.notifications.send(
               {
                 step: '05',
                 title: 'Channels',
-                desc: 'Multi-target delivery: In-App, Email, SMS, Webhooks, and Push.',
+                desc: 'Multi-target delivery across the implemented runtime: In-App, Email, and Push.',
                 icon: Send,
               },
             ].map((node) => {
@@ -363,13 +361,13 @@ response = client.notifications.send(
               {
                 title: 'E-Commerce Applications',
                 example: '"Order #4821 has been shipped"',
-                channels: 'Email, SMS, In-App',
+                channels: 'Email, In-App, Push',
                 desc: 'Order confirmations, fulfillment alerts, price drop notices, delivery updates.',
               },
               {
                 title: 'SaaS & DevOps Platforms',
                 example: '"Your deployment completed successfully"',
-                channels: 'In-App, Webhook, Email',
+                channels: 'In-App, Email, Push',
                 desc: 'Build pipelines, system alerts, cluster health, quota threshold warnings.',
               },
               {
@@ -381,19 +379,19 @@ response = client.notifications.send(
               {
                 title: 'Banking & FinTech',
                 example: '"Payment of ₹2,499 was successful"',
-                channels: 'SMS, Email, In-App',
+                channels: 'Email, In-App, Push',
                 desc: 'Instant transaction confirmations, fraud detection warnings, invoice receipts.',
               },
               {
                 title: 'Project Management & Collaboration',
                 example: '"New comment on your task"',
-                channels: 'In-App, Push, Webhooks',
+                channels: 'In-App, Email, Push',
                 desc: 'Task mentions, review approvals, sprint deadlines, status changes.',
               },
               {
                 title: 'Enterprise Internal Tools',
                 example: '"Quarterly compliance training due"',
-                channels: 'Email, Webhook, In-App',
+                channels: 'Email, In-App, Push',
                 desc: 'Employee self-service, IT ticket progress, HR benefits enrollment.',
               },
             ].map((app, idx) => (
@@ -470,8 +468,7 @@ response = client.notifications.send(
                   {[
                     { id: 'in_app', label: 'In-App', icon: Bell },
                     { id: 'email', label: 'Email', icon: Mail },
-                    { id: 'webhook', label: 'Webhook', icon: Webhook },
-                    { id: 'sms', label: 'SMS', icon: Smartphone },
+                    { id: 'push', label: 'Push', icon: Bell },
                   ].map((ch) => {
                     const Icon = ch.icon;
                     return (

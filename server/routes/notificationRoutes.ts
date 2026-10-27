@@ -11,7 +11,15 @@ import { consoleNotificationRateLimiter, aiReanalyzeRateLimiter } from '../secur
 
 export const notificationRouter = Router();
 
+const SUPPORTED_CHANNELS = ['in_app', 'email', 'push', 'multi_channel'] as const;
+
 notificationRouter.use(requireAuth);
+
+function normalizeRequestedChannel(channel: unknown): string | undefined {
+  if (typeof channel !== 'string') return undefined;
+  const normalized = channel.trim().toLowerCase();
+  return SUPPORTED_CHANNELS.includes(normalized as (typeof SUPPORTED_CHANNELS)[number]) ? normalized : undefined;
+}
 
 /**
  * Temporary admin-only diagnostics endpoint for production debugging.
@@ -119,6 +127,15 @@ notificationRouter.post('/', consoleNotificationRateLimiter, async (req: Authent
   try {
     const userId = req.developer!.id;
     const { applicationId, recipientId, type, title, message, priority, channel, actionUrl, metadata } = req.body;
+    const requestedChannel = normalizeRequestedChannel(channel);
+
+    if (channel !== undefined && !requestedChannel) {
+      res.status(400).json({
+        success: false,
+        error: 'Unsupported channel value. Supported channels are: in_app, email, push, multi_channel.',
+      });
+      return;
+    }
 
     if (!applicationId || !recipientId || !title || !message) {
       res.status(400).json({
@@ -196,7 +213,7 @@ notificationRouter.post('/', consoleNotificationRateLimiter, async (req: Authent
       title: title.trim(),
       message: message.trim(),
       priority: priority || 'normal',
-      channel: channel || 'in_app',
+      channel: requestedChannel || 'in_app',
       actionUrl,
       metadata,
       initialStatus: 'pending',
@@ -211,7 +228,7 @@ notificationRouter.post('/', consoleNotificationRateLimiter, async (req: Authent
     await addNotificationJob({
       notificationId: created.id,
       recipientId: created.recipientId,
-      channel: channel || 'in_app',
+      channel: requestedChannel || 'in_app',
     });
 
     res.status(201).json({

@@ -1217,8 +1217,6 @@ export const NotificationsPage: React.FC = () => {
                 <option value="email">Email</option>
                 <option value="push">Mobile Push</option>
                 <option value="multi_channel">Multi-Channel (Priority Policy)</option>
-                <option value="sms">SMS</option>
-                <option value="webhook">Webhook</option>
               </select>
             </div>
           </div>

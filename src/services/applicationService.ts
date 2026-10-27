@@ -21,7 +21,7 @@ function mapDbAppToFrontend(dbApp: any): Application {
     apiKeyStatus: dbApp.apiKeyStatus || 'active',
     lastActivityAt: dbApp.lastActivityAt || dbApp.updatedAt,
     rateLimitPerSec: dbApp.rateLimitPerSec || 100,
-    enabledChannels: ['in_app', 'email', 'webhook', 'sms'],
+    enabledChannels: ['in_app', 'email', 'push'],
     webhookUrl: dbApp.webhookUrl || '',
     totalNotifications: notifCount,
     deliveredCount: Math.round(notifCount * 0.98),

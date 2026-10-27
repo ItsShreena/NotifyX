@@ -1,6 +1,6 @@
 export type Environment = 'production' | 'staging' | 'development';
 
-export type DeliveryChannel = 'in_app' | 'email' | 'webhook' | 'sms' | 'push';
+export type DeliveryChannel = 'in_app' | 'email' | 'push' | 'multi_channel';
 
 export interface Application {
   id: string;
